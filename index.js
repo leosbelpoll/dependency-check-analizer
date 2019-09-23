@@ -21,6 +21,9 @@ if (args.length > 2) {
         case "c":
             const file1 = args[3];
             const file2 = args[4];
+            if (!file1 || !file2) {
+                errorHanlder(new Error("Missing files to compare!"));
+            }
             printVulnerabilitiesSummaryBetweenTwoFiles(file1, file2);
             return;
         default:
@@ -30,7 +33,6 @@ if (args.length > 2) {
 args.forEach((arg, index) => {
     if (index > 1) {
         const file = arg;
-        printHeader("File: " + file);
         printVulnerabilitiesSummaryFromFile(file);
     }
 });
@@ -39,10 +41,14 @@ args.forEach((arg, index) => {
 
 // Get dependencies from file
 function getDependenciesFromFile(file) {
-    const contents = fs.readFileSync(file);
-    const jsonContent = JSON.parse(contents);
+    try {
+        const contents = fs.readFileSync(file);
+        const jsonContent = JSON.parse(contents);
 
-    return jsonContent.dependencies || [];
+        return jsonContent.dependencies || [];
+    } catch (ex) {
+        errorHanlder(ex);
+    }
 }
 
 // ____  BEGIN COLOR MANAGEMENT
@@ -98,6 +104,7 @@ function getVulnerabilitiesSummaryFromFile(file) {
 // Show analisis from file
 function printVulnerabilitiesSummaryFromFile(file) {
     const vulnerabilitiesSummary = getVulnerabilitiesSummaryFromFile(file);
+    printHeader("File: " + file);
     vulnerabilitiesSummary.forEach(function(vulnerability) {
         printHighestVulnerabilityDetail(vulnerability);
     });
@@ -278,4 +285,14 @@ function getHighestVulnerabilityDetail(dependency) {
         cveCount: vulnerabilities.length,
         evidenceCount
     }
+}
+
+// Error handler
+function errorHanlder(ex) {
+    if (ex.code === "ENOENT") {
+        printDanger("File not found: " + ex.path);
+    } else {
+        printDanger("Error: " + ex.message);
+    }
+    process.exit(1);
 }
