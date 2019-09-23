@@ -5,6 +5,10 @@ const COLOR_RESET = "\x1b[0m";
 const FG_GREEN = "\x1b[32m";
 const FG_RED = "\x1b[31m";
 const FG_NEUTRAL = "\x1b[2m"
+
+const SUCCESS = "success";
+const NEUTRAL = "neutral";
+const DANGER = "danger";
 // ___________ END CONSTANTS __________ //
 
 
@@ -109,30 +113,21 @@ function printVulnerabilitiesSummaryBetweenTwoFiles(file1, file2) {
     const vulnerabilitiesSummaryFile1 = getVulnerabilitiesSummaryFromFile(file1);
     const vulnerabilitiesSummaryFile2 = getVulnerabilitiesSummaryFromFile(file2);
 
-    setDangerConsoleColor();
-    console.log("┌───────────────────────");
-    console.log("│  New vulnerabilities found:");
-    console.log("└───────────────────────");
+    printHeader("New vulnerabilities found:", DANGER);
     vulnerabilitiesSummaryFile2.forEach(function(vulnerability) {
         if (!existsVulnerabilityInVulnerabilities(vulnerability, vulnerabilitiesSummaryFile1)) {
             printHighestVulnerabilityDetail(vulnerability);
         }
     });
 
-    setSuccessConsoleColor();
-    console.log("┌───────────────────────");
-    console.log("│  Vulnerabilities corrected:");
-    console.log("└───────────────────────");
+    printHeader("Vulnerabilities corrected:");
     vulnerabilitiesSummaryFile1.forEach(function(vulnerability) {
         if (!existsVulnerabilityInVulnerabilities(vulnerability, vulnerabilitiesSummaryFile2)) {
             printHighestVulnerabilityDetail(vulnerability);
         }
     });
 
-    setNeutralConsoleColor();
-    console.log("┌───────────────────────");
-    console.log("│  Vulnerabilities same state:");
-    console.log("└───────────────────────");
+    printHeader("Vulnerabilities same state:", NEUTRAL);
     let isThereAny = false;
     vulnerabilitiesSummaryFile1.forEach(function(vulnerability) {
         if (existsVulnerabilityInVulnerabilities(vulnerability, vulnerabilitiesSummaryFile2)) {
@@ -162,8 +157,21 @@ function existsVulnerabilityInVulnerabilities(vulnerability, vulnerabilities) {
     return existsVulnerability;
 }
 
-function printHeader(text) {
-    setSuccessConsoleColor();
+function printHeader(text, type) {
+    switch (type) {
+        case SUCCESS:
+            setSuccessConsoleColor();
+            break;
+        case NEUTRAL:
+            setNeutralConsoleColor();
+            break;
+        case DANGER:
+            setDangerConsoleColor();
+            break;
+        default:
+            setSuccessConsoleColor();
+            break;
+    }
     console.log("┌───────────────────────");
     console.log("│  " + text);
     console.log("└───────────────────────");
