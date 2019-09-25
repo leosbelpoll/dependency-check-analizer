@@ -19,12 +19,19 @@ if (args.length > 2) {
     switch (operation) {
         case "compare":
         case "c":
-            const file1 = args[3];
-            const file2 = args[4];
-            if (!file1 || !file2) {
+            const path1 = args[3];
+            const path2 = args[4];
+            if (!path1 || !path2) {
                 errorHanlder(new Error("Missing files to compare!"));
+            } else {
+                if (fs.lstatSync(path1).isDirectory() && fs.lstatSync(path2).isDirectory()) {
+                    printVulnerabilitiesSummaryBetweenTwoFolders(path1, path2);
+                } else if (fs.lstatSync(path1).isFile() && fs.lstatSync(path2).isFile()) {
+                    printVulnerabilitiesSummaryBetweenTwoFiles(path1, path2);
+                } else {
+                    errorHanlder(new Error("You must specify two folders or two files"));
+                }
             }
-            printVulnerabilitiesSummaryBetweenTwoFiles(file1, file2);
             return;
         default:
             break;
@@ -44,6 +51,10 @@ function getDependenciesFromFile(file) {
     try {
         const contents = fs.readFileSync(file);
         const jsonContent = JSON.parse(contents);
+
+        if (!jsonContent) {
+            errorHanlder(new Error("Invalid JSON file " + file));
+        }
 
         return jsonContent.dependencies || [];
     } catch (ex) {
@@ -115,36 +126,70 @@ function printVulnerabilitiesSummaryFromFile(file) {
     }
 }
 
+// Show analisis between two folders
+function printVulnerabilitiesSummaryBetweenTwoFolders(folder1, folder2) {
+    fs.readdir(folder1, (err, files) => {
+        files.forEach(file => {
+            try {
+                const contents = fs.readFileSync(folder1 + "/" + file);
+                if (fileExistsInFolder(file, folder2) && JSON.parse(contents)) {
+                    printHeader("File: " + file);
+                    printVulnerabilitiesSummaryBetweenTwoFiles(folder1 + "/" + file, folder2 + "/" + file);
+                }
+            } catch (ex) {}
+        });
+      });
+}
+
+function fileExistsInFolder(file, folder) {
+    try {
+        if (fs.lstatSync(folder + "/" + file).isFile()) {
+            return true;
+        }
+    } catch (ex) {
+        return false;
+    }
+
+    return false;
+}
+
 // Show analisis between two files
 function printVulnerabilitiesSummaryBetweenTwoFiles(file1, file2) {
     const vulnerabilitiesSummaryFile1 = getVulnerabilitiesSummaryFromFile(file1);
     const vulnerabilitiesSummaryFile2 = getVulnerabilitiesSummaryFromFile(file2);
 
-    printHeader("New vulnerabilities found:", DANGER);
+    let isHeaderPrinted = false;
     vulnerabilitiesSummaryFile2.forEach(function(vulnerability) {
         if (!existsVulnerabilityInVulnerabilities(vulnerability, vulnerabilitiesSummaryFile1)) {
+            if (!isHeaderPrinted) {
+                printHeader("New vulnerabilities found:", DANGER);
+                isHeaderPrinted = true;
+            }
             printHighestVulnerabilityDetail(vulnerability);
         }
     });
 
-    printHeader("Vulnerabilities corrected:");
+    isHeaderPrinted = false;
     vulnerabilitiesSummaryFile1.forEach(function(vulnerability) {
         if (!existsVulnerabilityInVulnerabilities(vulnerability, vulnerabilitiesSummaryFile2)) {
+            if (!isHeaderPrinted) {
+                printHeader("Vulnerabilities corrected:");
+                isHeaderPrinted = true;
+            }
             printHighestVulnerabilityDetail(vulnerability);
         }
     });
 
-    printHeader("Vulnerabilities same state:", NEUTRAL);
-    let isThereAny = false;
+    isHeaderPrinted = false;
     vulnerabilitiesSummaryFile1.forEach(function(vulnerability) {
         if (existsVulnerabilityInVulnerabilities(vulnerability, vulnerabilitiesSummaryFile2)) {
+            if (!isHeaderPrinted) {
+                printHeader("Vulnerabilities same state:", NEUTRAL);
+                isHeaderPrinted = true;
+            }
             printHighestVulnerabilityDetail(vulnerability);
-            isThereAny = true;
         }
     });
-    if (!isThereAny) {
-        printNeutral(" None.");
-    }
 }
 
 function existsVulnerabilityInVulnerabilities(vulnerability, vulnerabilities) {

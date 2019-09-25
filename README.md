@@ -18,6 +18,7 @@ node index.js (compare | c) file1.json file2.json
 ```
 
 
-#### TODO:
-
 - Comparison between two folders
+```
+node index.js (compare | c) folder1 folder2
+```
