@@ -196,8 +196,6 @@ function existsVulnerabilityInVulnerabilities(vulnerability, vulnerabilities) {
     let existsVulnerability = false;
     vulnerabilities.forEach(function(vul) {
         if (vulnerability.fileName == vul.fileName
-            && vulnerability.cveCount == vul.cveCount
-            && vulnerability.evidenceCount == vul.evidenceCount
             && vulnerability.highestVulnerability.severity == vul.highestVulnerability.severity
             && vulnerability.highestVulnerability.score == vul.highestVulnerability.score
             && vulnerability.highestVulnerability.source == vul.highestVulnerability.source) {
